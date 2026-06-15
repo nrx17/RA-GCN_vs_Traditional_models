@@ -205,3 +205,26 @@ f1Binary test : 0.8571428571428571
 AUC test : 0.9188311688311689
 
 These results demonstrate that the implementation can be adapted to Alzheimer's disease classification using the OASIS dataset with minimal modifications to the original framework.
+T4 GPU Results on Synthetic Dataset
+------------------
+
+Model: RA-GCN (Optimized via T4 GPU)
+
+| Metric | Value |
+|---------|--------|
+| Accuracy | 0.9250 |
+| Macro F1 | 0.7869 |
+| Binary F1 | 0.6154 |
+| ROC-AUC | 0.9314 |
+
+Training output:
+
+acc test : 0.925
+
+f1Macro test : 0.7869166844236096
+
+f1Binary test : 0.6153846153846154
+
+AUC test : 0.9313647246608141
+
+These results were obtained after migrating the execution environment to a T4 GPU and optimizing tensor indexing device allocations inside the core modeling script (`code/model.py`).
