@@ -137,7 +137,7 @@ if __name__ == '__main__':
     ### Features is a tensor with size N by F
     ### labels is a list of node labels
     ### idx train is a list contains the index of training samples. idx_val and idx_test follow the same pattern
-    adj, features, labels, idx_train, idx_val, idx_test = load_data_medical(dataset_addr='../data/oasis/oasis_data.pkl',
+    adj, features, labels, idx_train, idx_val, idx_test = load_data_medical(dataset_addr='data/synthetic/per-90gt-0.5.pkl',
                                                                             train_ratio=0.6, test_ratio=0.2)
 
     ### start of code

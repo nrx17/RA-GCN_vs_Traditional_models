@@ -130,7 +130,7 @@ class RAGCN:
             for i in range(max_label):
                 labels_indices = (labels == i).nonzero().squeeze()
                 if labels_indices is not None:
-                    sub_samples = samples[labels_indices]
+                    sub_samples = samples[labels_indices.cpu()]
                     weight_, embed = self.net_Ws[i](x=self.features[sub_samples,:], adj=self.adj_W[i], samples=-1, func=self.act)
                     weight[labels_indices] = weight_.squeeze() if self.wod == 1 else weight_[:,i]
             weight = weight / max_label
