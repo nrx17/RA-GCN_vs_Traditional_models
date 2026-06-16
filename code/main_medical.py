@@ -1,3 +1,4 @@
+import os
 import time
 import argparse
 
@@ -130,13 +131,16 @@ def save_evaluation_dashboard(probs, max_val):
     fig, axes = plt.subplots(1, 3, figsize=(20, 6))
     ax_text, ax_cm, ax_roc = axes[0], axes[1], axes[2]
 
+    # Dynamic file naming setup using dataset name
+    dataset_name = os.path.splitext(os.path.basename(args.dataset))[0]
+
     # --- Panel 1: Training Run Metadata Text Block ---
     ax_text.axis('off')
     summary_text = (
         "=== Run Summary ===\n\n"
-        f"Dataset: OASIS Longitudinal\n"
-        f"Total Samples: 371 Patients\n"
-        f"Test Set Size: {len(true_labels)} Patients\n"
+        f"Dataset: {dataset_name.upper()}\n"
+        f"Total Samples: {len(labels)} Nodes\n"
+        f"Test Set Size: {len(true_labels)} Nodes\n"
         f"Total Epochs: {args.epochs}\n\n"
         "=== Best Test Metrics ===\n\n"
         f"Test Accuracy: {max_val['acc_test']:.4f}\n"
@@ -148,9 +152,9 @@ def save_evaluation_dashboard(probs, max_val):
                  verticalalignment='top', bbox=dict(boxstyle='round,pad=1', facecolor='#f8f9f9', edgecolor='#d6dbdf'))
 
     # --- Panel 2: Confusion Matrix Heatmap ---
-    classes = ["Non-demented (0)", "Demented (1)"]
+    classes = ["Class 0", "Class 1"]
     im = ax_cm.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    ax_cm.set_title("OASIS Confusion Matrix (Test Split)", fontsize=13, weight='bold', pad=10)
+    ax_cm.set_title(f"{dataset_name.upper()} Confusion Matrix (Test)", fontsize=13, weight='bold', pad=10)
     fig.colorbar(im, ax=ax_cm, shrink=0.7)
     
     tick_marks = np.arange(len(classes))
@@ -173,20 +177,22 @@ def save_evaluation_dashboard(probs, max_val):
     ax_roc.set_ylim([0.0, 1.05])
     ax_roc.set_xlabel('False Positive Rate', fontsize=11, weight='bold')
     ax_roc.set_ylabel('True Positive Rate', fontsize=11, weight='bold')
-    ax_roc.set_title('OASIS ROC Curve', fontsize=13, weight='bold', pad=10)
+    ax_roc.set_title(f'{dataset_name.upper()} ROC Curve', fontsize=13, weight='bold', pad=10)
     ax_roc.legend(loc="lower right", fontsize=10)
     ax_roc.grid(True, linestyle=':', alpha=0.6)
 
-    # Export configuration canvas out to file system
+    # Export unique visualization using dynamic filename
     plt.tight_layout()
-    plt.savefig('evaluation_dashboard.png', bbox_inches='tight', dpi=300)
+    output_filename = f"{dataset_name}_evaluation_dashboard.png"
+    plt.savefig(output_filename, bbox_inches='tight', dpi=300)
     plt.close()
-    print("\n[Dashboard Saved Successfully] -> Finished exporting evaluation_dashboard.png.")
+    print(f"\n[Dashboard Saved Successfully] -> Finished exporting {output_filename}.")
 
 
 if __name__ == '__main__':
     # Initialize command-line argument configuration
     parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/oasis/oasis_data.pkl', help='Path to the dataset pickle file.')
     parser.add_argument('--epochs', type=int, default=1000, help='Number of epochs to train.')
     parser.add_argument('--epoch_D', type=int, default=1, help='Discriminator iterations per epoch.')
     parser.add_argument('--epoch_W', type=int, default=1, help='Weighting network iterations per epoch.')
@@ -206,8 +212,8 @@ if __name__ == '__main__':
     # Determine validation device capabilities
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     
-    # Load raw dataset files
-    adj, features, labels, idx_train, idx_val, idx_test = load_data_medical(dataset_addr='data/oasis/oasis_data.pkl',
+    # Load dynamically from provided argument path
+    adj, features, labels, idx_train, idx_val, idx_test = load_data_medical(dataset_addr=args.dataset,
                                                                            train_ratio=0.6, test_ratio=0.2)
 
     # Format categorical states into target vectors

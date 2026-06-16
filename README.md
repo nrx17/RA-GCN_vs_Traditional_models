@@ -158,3 +158,57 @@ This layout contains:
 3. **ROC Performance Curve:** Maps out Sensitivity (True Positive Rate) against False Positive thresholds, annotating the definitive final Area Under the Curve (AUC) index score.
 
 ![Evaluation Metrics Dashboard](evaluation_dashboard.png)
+
+
+Multi-Disease Scaling & Benchmarking Framework
+------------
+To thoroughly test the scalability, class-imbalance robustness, and clinical adaptability of RA-GCN, the framework has been scaled across a five-disease diagnostic testing pipeline. 
+
+### Geometric Patient Network Graph Construction
+Because raw clinical data arrays are published as flat spreadsheets rather than pre-assembled graphs, a graph topology converter pipeline was introduced. For every individual clinical cohort, continuous and categorical patient metrics are isolate-scaled, and structural connections (edges) are drawn between patient pairs by computing their pairwise **Cosine Similarity**:
+
+$$S_C(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$$
+
+Connections are established wherever $S_C \ge \theta$ (where $\theta$ represents the optimized similarity threshold designed to maintain neighborhood graph integrity across varying clinical distributions). Self-loops are excluded from raw graph exports to allow `utils.py` to naturally inject normalized identity transformations during execution.
+
+---
+
+### Expanded Cohort Structural Breakdowns
+
+| Disease Track | Target Domain Condition | Node Count (Patients) | Extracted Clinical Features | Active Graph Edge Count |
+| :--- | :--- | :---: | :---: | :---: |
+| **OASIS** | Alzheimer's Dementia | 303 | 7 | 2,752 |
+| **Diabetes** | Pima Indian Diabetes Risk | 768 | 8 | 5,796 |
+| **Parkinson's** | Vocal / Speech Dysarthria | 195 | 22 | 460 |
+| **Heart Disease** | Cardiovascular Abnormality | 303 | 13 | 760 |
+| **Maternal Health** | Pregnancy Risk Severity | 1,014 | 6 | 27,003 |
+
+---
+
+### Master Benchmarking Evaluation Metrics
+
+The sequential master orchestration suite executed RA-GCN side-by-side against five traditional baseline statistical classifiers (Logistic Regression, Random Forest, Support Vector Machines, Gradient Boosting, and k-Nearest Neighbors) to observe performance variations across diverse sample dimensions.
+
+#### 1. Diabetes Experiment
+- **Dataset File:** `data/diabetes/diabetes_data.pkl`
+- **Dashboards & Visualizations:** `diabetes_data_evaluation_dashboard.png`, `diabetes_data_traditional_roc_smote.png`
+
+![Diabetes Evaluation Dashboard](diabetes_data_evaluation_dashboard.png)
+
+#### 2. Parkinson's Disease Experiment
+- **Dataset File:** `data/parkinsons/parkinsons_data.pkl`
+- **Dashboards & Visualizations:** `parkinsons_data_evaluation_dashboard.png`, `parkinsons_data_traditional_roc_smote.png`
+
+![Parkinson's Evaluation Dashboard](parkinsons_data_evaluation_dashboard.png)
+
+#### 3. Heart Disease Experiment
+- **Dataset File:** `data/heart/heart_data.pkl`
+- **Dashboards & Visualizations:** `heart_data_evaluation_dashboard.png`, `heart_data_traditional_roc_smote.png`
+
+![Heart Disease Evaluation Dashboard](heart_data_evaluation_dashboard.png)
+
+#### 4. Large-Scale Maternal Health Risk Experiment
+- **Dataset File:** `data/maternal/maternal_data.pkl`
+- **Dashboards & Visualizations:** `maternal_data_evaluation_dashboard.png`, `maternal_data_traditional_roc_smote.png`
+
+![Maternal Health Evaluation Dashboard](maternal_data_evaluation_dashboard.png)
