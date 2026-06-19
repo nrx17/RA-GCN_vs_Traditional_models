@@ -162,7 +162,3 @@ results_dashboard/        Saved metrics CSVs and dashboard images
 - RA-GCN without PCA collapses entirely on the two higher-dimensional datasets used here (Heart Disease, Parkinson's); this sensitivity is not yet fully understood.
 - SMOTE's `k_neighbors` parameter is adapted per dataset based on minority class size rather than fixed, since some datasets have too few minority samples for a fixed neighbor count.
 - A synthetic dataset (`data/synthetic/per-90gt-0.5.pkl`, built by `generate_dataset.py`) is included in this repository but was not used in the reported benchmark.
-
-## Note on AI Tool Usage
-
-AI tools were used to assist with coding, debugging, and documentation. All results were independently verified before inclusion in this report.
