@@ -37,7 +37,7 @@ Five independent medical tasks are covered: OASIS (Alzheimer's/dementia), Diabet
 
 | Dataset | Domain | Nodes | Raw Features | Graph Construction | Edge Count | Class Distribution (0 / 1) |
 |---|---|---|---|---|---|---|
-| OASIS Longitudinal | Alzheimer's / dementia | 371 | 7 (+1 used for graph) | Distance threshold on MMSE (γ=1, i.e. exact score match) | 12,454 | 206 / 165 |
+| OASIS Longitudinal | Alzheimer's / dementia | 371 | 7 (+1 used for graph) | Distance threshold on MMSE (γ=0, i.e. exact score match) | 12,454 | 206 / 165 |
 | Diabetes (Pima Indian) | Diabetes risk | 768 | 8 | Cosine similarity ≥ 0.80 | 5,796 | 500 / 268 |
 | Parkinson's (voice) | Parkinson's disease | 195 | 22 | Cosine similarity ≥ 0.85 | 460 | 48 / 147 |
 | Heart Disease (UCI) | Cardiovascular disease | 303 | 13 | Cosine similarity ≥ 0.70 | 760 | 220 / 83 |
