@@ -216,14 +216,12 @@ def benchmark_dataset(path, output_dir, timestamp):
     X, y, idx_train, idx_val, idx_test = load_dataset_splits(path)
     is_binary = len(np.unique(y)) == 2
 
-    # Match the exact training split configuration used by RA-GCN
+    # Match the exact training split configuration used by RA-GCN.
+    # Features here already come out of load_data_medical() PCA-transformed
+    # and scaled once — no additional scaling here, so traditional models
+    # see the identical feature representation RA-GCN sees.
     X_train_raw, y_train_raw = X[idx_train], y[idx_train]
     X_test, y_test = X[idx_test], y[idx_test]
-
-    # Standardize scale
-    scaler = StandardScaler()
-    X_train_raw = scaler.fit_transform(X_train_raw)
-    X_test = scaler.transform(X_test)
 
     all_results = []
 
