@@ -49,22 +49,21 @@ def load_data_medical(dataset_addr, train_ratio, test_ratio=0.2):
     features = fill_features(features)
 
     # =========================================================================
-    # OPTIONAL AUTOMATED PCA INJECTION FOR HIGH-FEATURE ENVIRONMENT STABILITY
+    # UNIFORM PCA PREPROCESSING (applied to all datasets, not applying PCA only to datasets with features above 10)
     # =========================================================================
     initial_feature_count = features.shape[1]
-    if initial_feature_count > 10:
-        target_components = 5
-        print(f"[PCA Preprocessing] High feature dimensions detected ({initial_feature_count} features).")
-        print(f"                     Applying PCA transformation down to {target_components} principal components...")
-        
-        # Scale features first so variance is equally weighted across components
-        scaler = StandardScaler()
-        scaled_features = scaler.fit_transform(features)
-        
-        # Fit and transform the high-dimensional patient vectors
-        pca = PCA(n_components=target_components, random_state=42)
-        features = pca.fit_transform(scaled_features)
-        print(f"[PCA Preprocessing] Variance captured: {sum(pca.explained_variance_ratio_):.4f}")
+    target_components = 5
+    print(f"[PCA Preprocessing] Input feature dimensions: {initial_feature_count}.")
+    print(f"                     Applying PCA transformation down to {target_components} principal components...")
+
+    # Scale features first so variance is equally weighted across components
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(features)
+
+    # Fit and transform the patient vectors
+    pca = PCA(n_components=target_components, random_state=42)
+    features = pca.fit_transform(scaled_features)
+    print(f"[PCA Preprocessing] Variance captured: {sum(pca.explained_variance_ratio_):.4f}")
     # =========================================================================
 
     idx_train, idx_test = train_test_split(range(n_node), test_size=test_ratio, random_state=42, stratify=labels)
