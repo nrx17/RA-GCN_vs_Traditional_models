@@ -21,7 +21,6 @@ import matplotlib
 matplotlib.use("Agg")  # headless backend, safe for servers / notebooks
 import matplotlib.pyplot as plt
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
