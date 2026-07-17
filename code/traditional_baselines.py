@@ -251,7 +251,7 @@ def main():
     args = parser.parse_args()
 
     # Generate isolated clean script timestamp
-    runtime_timestamp = datetime.now().strftime("%Y%mdd_%H%M%S")
+    runtime_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     df_results = benchmark_dataset(args.dataset, args.output_dir, runtime_timestamp)
     
