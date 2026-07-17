@@ -1,6 +1,7 @@
 import os
 import time
 import argparse
+import pickle
 from datetime import datetime
 
 import torch
@@ -8,12 +9,7 @@ seed_num = 17
 torch.manual_seed(seed_num)
 import torch.nn.functional as F
 
-import itertools as it
-import matplotlib.pyplot as plt
 import numpy as np
-
-# Import validation and metric evaluation tools
-from sklearn.metrics import confusion_matrix, roc_curve
 
 from model import RAGCN
 from utils import accuracy, load_data_medical, encode_onehot_torch, class_f1, auc_score
@@ -87,9 +83,9 @@ def train():
             continue
         print(key.replace('_', ' ') + ' : ' + str(val))
 
-    # Generate visual metric dashboard if valid predictions exist
+    # Save raw predictions for later consolidated plotting (combined ROC / CM in main.py)
     if best_test_probs is not None:
-        save_evaluation_dashboard(best_test_probs, max_val)
+        save_predictions(best_test_probs, max_val)
 
 
 def test(model, stats):
@@ -118,80 +114,26 @@ def test(model, stats):
         stats['AUC_test'] = auc_score(class_prob, labels[idx_test])
 
 
-def save_evaluation_dashboard(probs, max_val):
-    # Parse categorical output values
+def save_predictions(probs, max_val):
+    """Save RA-GCN's best test-set predictions for the consolidated ROC/CM images built in main.py."""
     pred_labels = torch.argmax(probs, dim=1).numpy()
     true_labels = labels[idx_test].cpu().numpy()
     pos_probs = torch.exp(probs)[:, 1].numpy() if probs.min() < 0 else probs[:, 1].numpy()
 
-    # Generate evaluation array states
-    cm = confusion_matrix(true_labels, pred_labels)
-    fpr, tpr, _ = roc_curve(true_labels, pos_probs)
-
-    # Configure plot canvases to a 3-column layout
-    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
-    ax_text, ax_cm, ax_roc = axes[0], axes[1], axes[2]
-
-    # Dynamic file naming setup using dataset name
     dataset_name = os.path.splitext(os.path.basename(args.dataset))[0]
-
-    # --- Panel 1: Training Run Metadata Text Block ---
-    ax_text.axis('off')
-    summary_text = (
-        "=== Run Summary ===\n\n"
-        f"Dataset: {dataset_name.upper()}\n"
-        f"Total Samples: {len(labels)} Nodes\n"
-        f"Test Set Size: {len(true_labels)} Nodes\n"
-        f"Total Epochs: {args.epochs}\n\n"
-        "=== Best Test Metrics ===\n\n"
-        f"Test Accuracy: {max_val['acc_test']:.4f}\n"
-        f"Macro F1 Score: {max_val['f1Macro_test']:.4f}\n"
-        f"Binary F1 Score: {max_val['f1Binary_test']:.4f}\n"
-        f"ROC AUC Score: {max_val['AUC_test']:.4f}"
-    )
-    ax_text.text(0.1, 0.9, summary_text, fontsize=12, family='sans-serif',
-                 verticalalignment='top', bbox=dict(boxstyle='round,pad=1', facecolor='#f8f9f9', edgecolor='#d6dbdf'))
-
-    # --- Panel 2: Confusion Matrix Heatmap ---
-    classes = ["Class 0", "Class 1"]
-    im = ax_cm.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    ax_cm.set_title(f"{dataset_name.upper()} Confusion Matrix (Test)", fontsize=13, weight='bold', pad=10)
-    fig.colorbar(im, ax=ax_cm, shrink=0.7)
-    
-    tick_marks = np.arange(len(classes))
-    ax_cm.set_xticks(tick_marks)
-    ax_cm.set_xticklabels(classes, rotation=15, fontsize=10)
-    ax_cm.set_yticks(tick_marks)
-    ax_cm.set_yticklabels(classes, fontsize=10)
-
-    thresh = cm.max() / 2.
-    for i, j in it.product(range(cm.shape[0]), range(cm.shape[1])):
-        ax_cm.text(j, i, format(cm[i, j], 'd'), horizontalalignment="center",
-                   color="white" if cm[i, j] > thresh else "black", fontsize=12, weight='bold')
-    ax_cm.set_ylabel('True Clinical Class', fontsize=11, weight='bold')
-    ax_cm.set_xlabel('Predicted Clinical Class', fontsize=11, weight='bold')
-
-    # --- Panel 3: Receiver Operating Characteristic Curve ---
-    ax_roc.plot(fpr, tpr, color='darkorange', lw=2.5, label=f'RA-GCN Model (AUC = {max_val["AUC_test"]:.4f})')
-    ax_roc.plot([0, 1], [0, 1], color='navy', lw=1.5, linestyle='--')
-    ax_roc.set_xlim([0.0, 1.0])
-    ax_roc.set_ylim([0.0, 1.05])
-    ax_roc.set_xlabel('False Positive Rate', fontsize=11, weight='bold')
-    ax_roc.set_ylabel('True Positive Rate', fontsize=11, weight='bold')
-    ax_roc.set_title(f'{dataset_name.upper()} ROC Curve', fontsize=13, weight='bold', pad=10)
-    ax_roc.legend(loc="lower right", fontsize=10)
-    ax_roc.grid(True, linestyle=':', alpha=0.6)
-
-    # Route output folder cleanly and append timestamp string
     output_dir = "results_dashboard"
     os.makedirs(output_dir, exist_ok=True)
-    timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = os.path.join(output_dir, f"{dataset_name}_evaluation_dashboard_{timestamp_str}.png")
-    
-    plt.tight_layout()
-    plt.savefig(output_filename, bbox_inches='tight', dpi=300)
-    plt.close()
-    print(f"\n[Dashboard Saved Successfully] -> Finished exporting {output_filename}.")
+    out_path = os.path.join(output_dir, f"{dataset_name}_ragcn_predictions.pkl")
+
+    payload = {
+        "y_true": true_labels,
+        "y_pred": pred_labels,
+        "y_score": pos_probs,
+        "auc": max_val["AUC_test"],
+    }
+    with open(out_path, "wb") as f:
+        pickle.dump(payload, f)
+    print(f"\n[Predictions Saved Successfully] -> Finished exporting {out_path}.")
 
 
 if __name__ == '__main__':
