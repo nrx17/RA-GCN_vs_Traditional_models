@@ -30,9 +30,14 @@ def run_pipeline():
     print("\n\n COMPLETED SUCCESSFULLY!")
     
     # Compile and display individual summary tables for each executed dataset
+    os.makedirs("results_dashboard", exist_ok=True)
     for name in datasets.keys():
-        csv_path = f"{name}_traditional_metrics.csv"
-        if os.path.exists(csv_path):
+        matches = sorted(
+            f for f in os.listdir("results_dashboard")
+            if f.startswith(f"{name}_data_traditional_metrics_") and f.endswith(".csv")
+        )
+        if matches:
+            csv_path = os.path.join("results_dashboard", matches[-1])  # most recent run
             print(f"\n\nFINAL REPORT SUMMARY TABLE ({name.upper()}):")
             df = pd.read_csv(csv_path)
             df = df[["Condition", "Model", "Accuracy", "Macro F1", "Binary F1", "ROC-AUC"]]
