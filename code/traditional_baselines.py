@@ -7,19 +7,22 @@ raw imbalanced data and on SMOTE-rebalanced data.
 
 It reuses `load_data_medical` from utils.py so every baseline sees the exact
 same patient-level idx_train split used by RA-GCN itself, keeping the comparison fair.
+
+Each model's SMOTE-condition test predictions are pickled to disk, and main.py later
+combines them with RA-GCN's own predictions into two consolidated per-dataset
+images (one shared ROC plot, one shared confusion-matrix grid) covering all
+6 models together.
 """
 
 import os
 import sys
 import argparse
+import pickle
 import warnings
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")  # headless backend, safe for servers / notebooks
-import matplotlib.pyplot as plt
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -30,7 +33,6 @@ from sklearn.metrics import (
     accuracy_score,
     f1_score,
     roc_auc_score,
-    roc_curve,
 )
 from sklearn.exceptions import ConvergenceWarning
 from imblearn.over_sampling import SMOTE
@@ -167,43 +169,32 @@ def apply_smote(X_train, y_train):
 
 
 # --------------------------------------------------------------------------- #
-# Plotting
+# Prediction export (for main.py's consolidated ROC / confusion-matrix images)
 # --------------------------------------------------------------------------- #
-def plot_roc_curves(dataset_name, fitted_models, X_test, y_test, output_dir, timestamp):
-    """Save a publication-ready ROC plot comparing the SMOTE-boosted models with detailed metrics."""
-    plt.figure(figsize=(8.5, 6.5), dpi=300)
-    colors = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e"]
+def save_traditional_predictions(dataset_name, fitted_models, X_test, y_test, output_dir):
+    """
+    Save each SMOTE-trained model's test-set predictions to disk.
 
-    for (model_name, model), color in zip(fitted_models.items(), colors):
+    main.py later loads this file together with RA-GCN's own predictions
+    pickle to build one combined ROC plot and one combined confusion-matrix
+    grid per dataset, covering all 6 models (RA-GCN + 5 traditional) side
+    by side, instead of separate per-model figures.
+    """
+    predictions = {}
+    for model_name, model in fitted_models.items():
         y_score = model.predict_proba(X_test)[:, 1]
         y_pred = model.predict(X_test)
-        
-        # Calculate cross-evaluation markers for legend expansion
-        acc_val = accuracy_score(y_test, y_pred)
-        f1_mac = f1_score(y_test, y_pred, average="macro", zero_division=0)
-        auc_val = roc_auc_score(y_test, y_score)
-        
-        fpr, tpr, _ = roc_curve(y_test, y_score)
-        label_text = f"{model_name:<20} [AUC={auc_val:.3f}, Acc={acc_val:.3f}, F1={f1_mac:.3f}]"
-        plt.plot(fpr, tpr, color=color, linewidth=2, label=label_text)
-
-    plt.plot([0, 1], [0, 1], linestyle="--", color="gray", linewidth=1, label="Chance")
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate", fontsize=12)
-    plt.ylabel("True Positive Rate", fontsize=12)
-    plt.title(f"ROC Curves (SMOTE) – Traditional Baselines\nDataset: {dataset_name.upper()}", fontsize=13, pad=10)
-    
-    # Using a monospace font style makes alignment of multiple metrics uniform in legends
-    plt.legend(loc="lower right", fontsize=8, frameon=True, prop={'family': 'monospace', 'size': 8})
-    plt.grid(alpha=0.3)
-    plt.tight_layout()
+        predictions[model_name] = {
+            "y_true": y_test,
+            "y_pred": y_pred,
+            "y_score": y_score,
+        }
 
     os.makedirs(output_dir, exist_ok=True)
-    out_path = os.path.join(output_dir, f"{dataset_name}_traditional_roc_smote_{timestamp}.png")
-    plt.savefig(out_path, dpi=300, bbox_inches="tight")
-    plt.close()
-    print(f"[Plot Saved Successfully] -> Finished exporting {out_path}")
+    out_path = os.path.join(output_dir, f"{dataset_name}_traditional_predictions.pkl")
+    with open(out_path, "wb") as f:
+        pickle.dump(predictions, f)
+    print(f"[Predictions Saved Successfully] -> Finished exporting {out_path}")
 
 
 # --------------------------------------------------------------------------- #
@@ -237,8 +228,10 @@ def benchmark_dataset(path, output_dir, timestamp):
     )
     all_results.extend(smote_results)
 
+    # Export SMOTE-condition predictions for the consolidated cross-model
+    # ROC / confusion-matrix images built later in main.py
     if is_binary:
-        plot_roc_curves(dataset_name, smote_models, X_test, y_test, output_dir, timestamp)
+        save_traditional_predictions(dataset_name, smote_models, X_test, y_test, output_dir)
 
     return pd.DataFrame(all_results)
 
